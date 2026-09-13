@@ -178,7 +178,7 @@ export default function PricingPage() {
           {[
             { q: "Can I cancel anytime?", a: "Yes. Cancel from your account settings anytime. You keep Pro access until the end of your billing period." },
             { q: "What happens to my resumes if I downgrade?", a: "Your resumes are never deleted. You can still view and edit them, but can't create new ones beyond the free limit." },
-            { q: "Is Gemini AI free?", a: "We use Google's Gemini 1.5 Flash model. It's included in your plan — no extra cost. Free users get 5 AI uses, Pro gets 100/month." },
+            { q: "Is the AI writing feature free?", a: "We use OpenRouter's free-tier models. It's included in your plan — no extra cost. Free users get 5 AI uses, Pro gets 100/month." },
             { q: "Do you offer refunds?", a: "Yes — full refund within 7 days of your first Pro payment. Contact support and we'll process it immediately." },
           ].map(({ q, a }) => (
             <div key={q} className="border-b border-zinc-100 pb-5 mb-5">

@@ -19,6 +19,8 @@ import aiRoutes from "./routes/ai.js";
 import subscriptionRoutes from "./routes/subscriptions.js";
 import adminRoutes from "./routes/admin.js";
 import stripeRoutes from "./routes/stripe.js";
+import { logger } from "./services/logging/logger.js";
+import { registerSentryErrorHandler, captureException } from "./services/logging/sentry.js";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -60,12 +62,12 @@ app.use("/api/stripe/webhook", express.raw({ type: "application/json" }));
 
 app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
-app.use(morgan("dev"));
+app.use(morgan("dev", { stream: { write: (msg) => logger.http(msg.trim()) } }));
 
 // ── Rate limiting ──────────────────────────────────────────────
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,
+  windowMs: 15 * 60 * 1000,
+  max: 1000,
   message: { error: "Too many requests, please try again later." },
 });
 app.use("/api", limiter);
@@ -90,27 +92,38 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
+// Sentry's error handler must be registered after all routes but
+// before the final custom error handler below, so it can capture the
+// error before we turn it into a JSON response. No-ops if SENTRY_DSN
+// isn't set.
+registerSentryErrorHandler(app);
+
 // ── Global error handler ───────────────────────────────────────
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  captureException(err, { path: req.path, method: req.method });
   res.status(err.status || 500).json({
     error: err.message || "Internal server error",
   });
 });
 
 // ── Database + Start ───────────────────────────────────────────
-mongoose
-  .connect(process.env.MONGODB_URI)
-  .then(() => {
-    console.log("✅ MongoDB connected");
-    
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on http://localhost:${PORT}`);
+// Skipped under NODE_ENV=test — tests import `app` directly and manage
+// their own (in-memory) DB connection via mongodb-memory-server, so we
+// don't want a real network connection or an open listening port as a
+// side effect of just importing this module.
+if (process.env.NODE_ENV !== "test") {
+  mongoose
+    .connect(process.env.MONGODB_URI)
+    .then(() => {
+      logger.info("MongoDB connected");
+      app.listen(PORT, () => {
+        logger.info(`Server running on http://localhost:${PORT}`);
+      });
+    })
+    .catch((err) => {
+      logger.error("MongoDB connection failed", { error: err.message });
+      process.exit(1);
     });
-  })
-  .catch((err) => {
-    console.error("❌ MongoDB connection failed:", err.message);
-    process.exit(1);
-  });
+}
 
 export default app;

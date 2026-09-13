@@ -15,6 +15,7 @@ export default function AdminPlans() {
   const [editing, setEditing] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [saving, setSaving] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     api.get("/admin/plans").then(({ data }) => {
@@ -30,8 +31,10 @@ export default function AdminPlans() {
       } else {
         setPlans(data.plans);
       }
-      setLoading(false);
-    });
+    }).catch(() => {
+      setLoadError(true);
+      toast.error("Failed to load plans");
+    }).finally(() => setLoading(false));
   }, []);
 
   function startEdit(plan) {
@@ -65,10 +68,16 @@ export default function AdminPlans() {
           atsAnalysis: editForm.atsAnalysis,
         },
       };
-      // Try update first, then create
+      // Try update first; only fall back to create when the plan
+      // genuinely doesn't exist yet (a 404 from the PATCH route).
+      // Blanket-catching any error here would mask real problems (e.g.
+      // validation failures, expired session) behind a confusing
+      // duplicate-key error from the fallback POST, since Plan.name
+      // has a unique index.
       try {
         await api.patch(`/admin/plans/${planName}`, payload);
-      } catch {
+      } catch (patchErr) {
+        if (patchErr.response?.status !== 404) throw patchErr;
         await api.post("/admin/plans", {
           name: planName,
           displayName: planName.charAt(0).toUpperCase() + planName.slice(1),
@@ -94,6 +103,7 @@ export default function AdminPlans() {
   };
 
   if (loading) return <div className="p-8 text-zinc-500 flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Loading plans…</div>;
+  if (loadError) return <div className="p-8 text-center text-zinc-500 text-sm">Couldn't load plans. Please refresh the page.</div>;
 
   return (
     <div className="p-6 lg:p-8">

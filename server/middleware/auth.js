@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
+import { shouldResetCredits } from "../services/subscription/credits.js";
 
 // ── Verify JWT ─────────────────────────────────────────────────
 export const protect = async (req, res, next) => {
@@ -80,15 +81,9 @@ export const requirePro = (req, res, next) => {
 export const checkAICredits = async (req, res, next) => {
   const user = await User.findById(req.user._id);
 
-  // Reset monthly if needed
-  const now = new Date();
-  const lastReset = new Date(user.usage.lastResetDate);
-  if (
-    now.getMonth() !== lastReset.getMonth() ||
-    now.getFullYear() !== lastReset.getFullYear()
-  ) {
+  if (shouldResetCredits(user.usage.lastResetDate)) {
     user.usage.aiCreditsUsed = 0;
-    user.usage.lastResetDate = now;
+    user.usage.lastResetDate = new Date();
     await user.save();
   }
 

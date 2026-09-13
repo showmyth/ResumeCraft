@@ -2,15 +2,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { Lock, ArrowRight, Check, FileText } from "lucide-react";
 import { cn, TEMPLATE_GRADIENTS } from "../utils/helpers";
-
-const TEMPLATES = [
-  { id: "modern", name: "Modern", category: "Modern", desc: "Clean two-column layout with subtle color accents. Perfect for tech and creative roles.", isPro: false },
-  { id: "classic", name: "Classic", category: "Classic", desc: "Traditional single-column layout. Maximally ATS-optimized for corporate applications.", isPro: false },
-  { id: "executive", name: "Executive", category: "Executive", desc: "Bold header with refined typography. Designed for senior and C-level professionals.", isPro: true },
-  { id: "creative", name: "Creative", category: "Creative", desc: "Vibrant sidebar design that stands out. Ideal for designers, marketers, and creatives.", isPro: true },
-  { id: "minimal", name: "Minimal", category: "Minimal", desc: "Ultra-clean with generous whitespace. Timeless elegance for any industry.", isPro: true },
-  { id: "tech", name: "Tech", category: "Tech", desc: "Monospace-inspired layout engineered for software developers and engineers.", isPro: true },
-];
+import { LAYOUTS, DOMAINS, DOMAIN_DEFAULT_LAYOUT } from "../utils/domains";
 
 export default function TemplatesPage() {
   const { user, isPro } = useAuth();
@@ -25,6 +17,8 @@ export default function TemplatesPage() {
           ResumeCraft
         </Link>
         <div className="flex items-center gap-3">
+          <Link to="/quiz" className="text-sm text-zinc-500 hover:text-zinc-800 hidden sm:block">Which Domain?</Link>
+          <Link to="/examples" className="text-sm text-zinc-500 hover:text-zinc-800 hidden sm:block">Examples</Link>
           {user ? (
             <Link to="/dashboard" className="btn-secondary text-sm">Dashboard</Link>
           ) : (
@@ -39,14 +33,18 @@ export default function TemplatesPage() {
             Templates
           </div>
           <h1 className="text-4xl font-bold text-zinc-900 mb-3">
-            6 professional resume templates
+            5 layouts, built for 10 CS domains
           </h1>
-          <p className="text-lg text-zinc-500">Designed by recruiters. ATS-tested. Built to impress.</p>
+          <p className="text-lg text-zinc-500">
+            Each layout is a real, distinct structure — not a color swap. Pick your domain, get a recommendation.
+          </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {TEMPLATES.map(t => {
+        {/* Layout cards */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-20">
+          {LAYOUTS.map(t => {
             const locked = t.isPro && !isPro;
+            const domainsForLayout = DOMAINS.filter(d => DOMAIN_DEFAULT_LAYOUT[d.id] === t.id);
             return (
               <div key={t.id} className="group rounded-2xl border border-zinc-200 overflow-hidden bg-white hover:shadow-lg transition-all duration-300">
                 <div className={`relative h-52 bg-gradient-to-br ${TEMPLATE_GRADIENTS[t.id]} overflow-hidden`}>
@@ -63,9 +61,11 @@ export default function TemplatesPage() {
                       !t.isPro ? "bg-emerald-500/90 text-white" : "bg-brand-600/90 text-white")}>
                       {t.isPro ? "PRO" : "FREE"}
                     </span>
-                    <span className="px-2 py-0.5 rounded-full bg-black/20 text-white text-[10px] font-semibold">
-                      {t.category}
-                    </span>
+                    {t.tag && (
+                      <span className="px-2 py-0.5 rounded-full bg-black/20 text-white text-[10px] font-semibold">
+                        {t.tag}
+                      </span>
+                    )}
                   </div>
                   {locked && (
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -79,7 +79,16 @@ export default function TemplatesPage() {
 
                 <div className="p-5">
                   <h3 className="font-bold text-zinc-900 mb-1">{t.name}</h3>
-                  <p className="text-sm text-zinc-500 mb-4 leading-relaxed">{t.desc}</p>
+                  <p className="text-sm text-zinc-500 mb-3 leading-relaxed">{t.desc}</p>
+                  {domainsForLayout.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mb-4">
+                      {domainsForLayout.map(d => (
+                        <span key={d.id} className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-600">
+                          {d.label}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                   {locked ? (
                     <Link to="/pricing" className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-brand-500 text-brand-600 text-sm font-semibold hover:bg-brand-50 transition-colors">
                       <Lock className="w-3.5 h-3.5" /> Unlock with Pro
@@ -96,14 +105,40 @@ export default function TemplatesPage() {
           })}
         </div>
 
+        {/* Domain directory */}
+        <div className="mb-16">
+          <h2 className="text-2xl font-bold text-zinc-900 mb-2 text-center">Browse by domain</h2>
+          <p className="text-sm text-zinc-500 text-center mb-8">Every domain maps to a recommended layout above — you can always switch it in the builder.</p>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {DOMAINS.map(d => {
+              const layout = LAYOUTS.find(l => l.id === DOMAIN_DEFAULT_LAYOUT[d.id]);
+              return (
+                <Link
+                  key={d.id}
+                  to={user ? `/builder?domain=${d.id}` : "/register"}
+                  className="flex items-center justify-between gap-3 p-4 rounded-xl border border-zinc-200 hover:border-brand-300 hover:shadow-sm transition-all"
+                >
+                  <div>
+                    <p className="text-sm font-bold text-zinc-800">{d.label}</p>
+                    <p className="text-xs text-zinc-500">{d.desc}</p>
+                  </div>
+                  <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-brand-50 text-brand-700 flex-shrink-0 whitespace-nowrap">
+                    {layout?.name}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
         {!isPro && (
-          <div className="mt-16 text-center p-12 rounded-3xl bg-brand-950 text-white">
-            <h2 className="text-2xl font-bold mb-3">Unlock all 6 premium templates</h2>
-            <p className="text-brand-200 mb-6">Executive, Creative, Minimal and Tech are Pro-only.</p>
+          <div className="text-center p-12 rounded-3xl bg-brand-950 text-white">
+            <h2 className="text-2xl font-bold mb-3">Unlock all 5 templates</h2>
+            <p className="text-brand-200 mb-6">Infosec, DevOps/SRE, Systems, and CV-Hybrid are Pro-only.</p>
             <div className="flex flex-wrap justify-center gap-4 mb-8">
-              {["Executive", "Creative", "Minimal", "Tech"].map(n => (
-                <div key={n} className="flex items-center gap-1.5 text-sm text-white/80">
-                  <Check className="w-4 h-4 text-brand-300" /> {n} Template
+              {LAYOUTS.filter(t => t.isPro).map(t => (
+                <div key={t.id} className="flex items-center gap-1.5 text-sm text-white/80">
+                  <Check className="w-4 h-4 text-brand-300" /> {t.name}
                 </div>
               ))}
             </div>

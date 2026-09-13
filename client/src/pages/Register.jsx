@@ -78,6 +78,12 @@ export default function RegisterPage() {
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
               {loading ? "Creating account…" : "Create Free Account"}
             </button>
+            <p className="text-center text-[11px] text-zinc-400 mt-3">
+              By signing up, you agree to our{" "}
+              <Link to="/terms" className="text-zinc-500 hover:underline">Terms of Service</Link>{" "}
+              and{" "}
+              <Link to="/privacy" className="text-zinc-500 hover:underline">Privacy Policy</Link>.
+            </p>
           </form>
 
           <ul className="mt-5 space-y-1.5">

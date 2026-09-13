@@ -1,11 +1,14 @@
 import express from "express";
+import Stripe from "stripe";
 import User from "../models/User.js";
 import Resume from "../models/Resume_Schema.js";
 import Plan from "../models/Plan.js";
 import { protect, adminOnly } from "../middleware/auth.js";
+import { logger } from "../services/logging/logger.js";
 
 const router = express.Router();
 router.use(protect, adminOnly);
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 // ── GET /api/admin/stats ───────────────────────────────────────
 router.get("/stats", async (req, res, next) => {
@@ -249,8 +252,33 @@ router.delete("/users/:id", async (req, res, next) => {
       return res.status(400).json({ error: "You cannot delete your own account." });
     }
 
-    const user = await User.findByIdAndDelete(req.params.id);
+    const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ error: "User not found." });
+
+    // Cancel any active Stripe subscription BEFORE deleting the user —
+    // otherwise Stripe keeps billing their card on a schedule with no
+    // account left to manage or cancel it from. This must not block
+    // the deletion entirely if Stripe is unreachable/misconfigured;
+    // we log and continue so an admin can still remove the account,
+    // but the attempt (and any failure) is now visible in the logs
+    // instead of silently leaving an orphaned subscription.
+    if (user.subscription?.stripeSubscriptionId) {
+      try {
+        await stripe.subscriptions.cancel(user.subscription.stripeSubscriptionId);
+        logger.info("Canceled Stripe subscription before user deletion", {
+          userId: user._id.toString(),
+          subscriptionId: user.subscription.stripeSubscriptionId,
+        });
+      } catch (stripeErr) {
+        logger.error("Failed to cancel Stripe subscription during user deletion — subscription may still be active on Stripe's side and needs manual cancellation", {
+          userId: user._id.toString(),
+          subscriptionId: user.subscription.stripeSubscriptionId,
+          error: stripeErr.message,
+        });
+      }
+    }
+
+    await User.findByIdAndDelete(req.params.id);
 
     // Delete all their resumes too
     await Resume.deleteMany({ user: req.params.id });

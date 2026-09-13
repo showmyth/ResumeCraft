@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../utils/api";
 import {
@@ -8,9 +8,11 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { debounce, calculateATSScore, DEFAULT_CONTENT, cn } from "../../utils/helpers";
+import { DOMAIN_DEFAULT_LAYOUT } from "../../utils/domains";
 import EditorPanel from "../../components/editor/EditorPanel";
 import ResumePreview from "../../components/editor/ResumePreview";
 import TemplateSelector from "../../components/editor/TemplateSelector";
+import DomainSelector from "../../components/editor/DomainSelector";
 import ATSPanel from "../../components/editor/ATSPanel";
 
 
@@ -18,6 +20,7 @@ export default function BuilderPage() {
   const { id } = useParams();
   const { isPro } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [resume, setResume] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -37,9 +40,18 @@ export default function BuilderPage() {
           setResume(data.resume);
           setAtsScore(data.resume.atsScore || calculateATSScore(data.resume.content));
         } else {
+          // Support deep links from the Templates gallery (?template=)
+          // and the domain quiz (?domain=) so picking a domain/layout
+          // there actually seeds the new resume instead of being ignored.
+          const domainParam = searchParams.get("domain");
+          const templateParam = searchParams.get("template");
+          const domain = domainParam || "swe";
+          const templateId = templateParam || DOMAIN_DEFAULT_LAYOUT[domain] || "jakes";
+
           const { data } = await api.post("/resumes", {
             title: "My Resume",
-            templateId: "modern",
+            domain,
+            templateId,
             content: DEFAULT_CONTENT,
           });
           navigate(`/builder/${data.resume._id}`, { replace: true });
@@ -62,6 +74,7 @@ export default function BuilderPage() {
       try {
         await api.patch(`/resumes/${r._id}`, {
           title: r.title,
+          domain: r.domain,
           templateId: r.templateId,
           content: r.content,
           atsScore: calculateATSScore(r.content),
@@ -191,13 +204,16 @@ export default function BuilderPage() {
         {/* Left panel */}
         <div className="w-full lg:w-[420px] flex-shrink-0 overflow-y-auto bg-white border-r border-zinc-200">
           {activeTab === "editor" && (
-            <EditorPanel content={resume.content} onChange={updateContent} isPro={isPro} resumeId={resume._id} />
+            <EditorPanel content={resume.content} onChange={updateContent} isPro={isPro} resumeId={resume._id} domain={resume.domain} templateId={resume.templateId} />
           )}
           {activeTab === "templates" && (
-            <TemplateSelector selected={resume.templateId} onSelect={t => updateField("templateId", t)} isPro={isPro} />
+            <>
+              <DomainSelector selected={resume.domain} onSelect={d => updateField("domain", d)} />
+              <TemplateSelector selected={resume.templateId} onSelect={t => updateField("templateId", t)} isPro={isPro} domain={resume.domain} />
+            </>
           )}
           {activeTab === "ats" && (
-            <ATSPanel content={resume.content} score={atsScore} isPro={isPro} />
+            <ATSPanel content={resume.content} score={atsScore} isPro={isPro} domain={resume.domain} />
           )}
         </div>
 

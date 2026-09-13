@@ -56,6 +56,14 @@ export function getRoleBadgeClass(role) {
 }
 
 export const TEMPLATE_GRADIENTS = {
+  // New real layout families (see client/src/utils/domains.js)
+  jakes:             "from-zinc-700 to-zinc-900",
+  infosec:           "from-slate-700 to-blue-950",
+  "devops-sre":      "from-teal-600 to-emerald-900",
+  "systems-lowlevel":"from-neutral-600 to-zinc-900",
+  "cv-hybrid":       "from-violet-600 to-purple-900",
+  // Legacy 6-color templates — kept so resumes created before the
+  // domain/layout refactor still render their gradient card correctly.
   modern: "from-brand-500 to-brand-700",
   classic: "from-gray-600 to-gray-900",
   executive: "from-slate-600 to-slate-900",
@@ -73,4 +81,15 @@ export const DEFAULT_CONTENT = {
   projects: [],
   certifications: [],
   languages: [],
+  // Domain-specific blocks — all optional, populated only for the
+  // layouts that render them (see server/models/Resume_Schema.js).
+  skillsMatrix: [],
+  ctfToolingProjects: [],
+  infraStack: [],
+  metrics: [],
+  hardwareLanguages: [],
+  patents: [],
+  benchmarks: [],
+  publications: [],
+  researchExperience: [],
 };
