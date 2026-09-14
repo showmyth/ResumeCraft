@@ -138,3 +138,19 @@ describe("Password reset flow (end-to-end)", () => {
     expect(res.status).toBe(400);
   });
 });
+describe("Password reset rate limiting", () => {
+  it("rate-limits repeated forgot-password requests from the same client", async () => {
+    const original = process.env.NODE_ENV;
+    process.env.NODE_ENV = "production";
+    try {
+      let lastStatus;
+      for (let i = 0; i < 6; i++) {
+        const res = await request(app).post("/api/auth/forgot-password").send({ email: "ratelimit@example.com" });
+        lastStatus = res.status;
+      }
+      expect(lastStatus).toBe(429);
+    } finally {
+      process.env.NODE_ENV = original;
+    }
+  });
+});

@@ -17,6 +17,7 @@ const resetLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
   message: { error: "Too many password reset requests. Please try again later." },
+  skip: () => process.env.NODE_ENV === "test",
 });
 
 // ── Validation rules ───────────────────────────────────────────
