@@ -7,7 +7,7 @@ import {
 import { cn } from "../utils/helpers";
 
 const FEATURES = [
-  { icon: Cpu, title: "Gemini AI Writing", desc: "Google's Gemini generates bullet points and summaries tailored to your target role.", color: "text-brand-600", bg: "bg-brand-50" },
+  { icon: Cpu, title: "AI Writing Assistant", desc: "AI-generated bullet points and summaries tailored to your target role, powered by OpenRouter.", color: "text-brand-600", bg: "bg-brand-50" },
   { icon: BarChart3, title: "ATS Score Analysis", desc: "Real-time scoring ensures your resume passes automated applicant tracking systems.", color: "text-emerald-600", bg: "bg-emerald-50" },
   { icon: Palette, title: "6 Pro Templates", desc: "Modern, Classic, Executive, Creative, Minimal, and Tech — designed by recruiters.", color: "text-purple-600", bg: "bg-purple-50" },
   { icon: Zap, title: "Live Preview", desc: "See changes instantly in your split-screen editor. What you see is what you get.", color: "text-amber-600", bg: "bg-amber-50" },
@@ -36,7 +36,9 @@ export default function LandingPage() {
             ResumeCraft
           </Link>
           <div className="hidden md:flex items-center gap-1">
+            <Link to="/quiz" className="btn-ghost text-sm">Which Domain?</Link>
             <Link to="/templates" className="btn-ghost text-sm">Templates</Link>
+            <Link to="/examples" className="btn-ghost text-sm">Examples</Link>
             <Link to="/pricing" className="btn-ghost text-sm">Pricing</Link>
           </div>
           <div className="flex items-center gap-3">
@@ -57,7 +59,7 @@ export default function LandingPage() {
         <div className="max-w-4xl mx-auto">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-50 border border-brand-100 text-brand-600 text-sm font-medium mb-8">
             <Sparkles className="w-3.5 h-3.5" />
-            Powered by Google Gemini AI · Free to start
+            Powered by OpenRouter AI · Free to start
           </div>
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-zinc-900 mb-6 leading-tight">
             Your resume,{" "}
@@ -209,10 +211,14 @@ export default function LandingPage() {
             <div className="w-6 h-6 rounded bg-brand-600 flex items-center justify-center"><FileText className="w-3 h-3 text-white" /></div>
             ResumeCraft
           </Link>
-          <p className="text-sm text-zinc-400">© {new Date().getFullYear()} ResumeCraft. Built with MERN + Gemini AI.</p>
+          <p className="text-sm text-zinc-400">© {new Date().getFullYear()} ResumeCraft. Built with MERN + OpenRouter AI.</p>
           <div className="flex gap-4 text-sm text-zinc-400">
+            <Link to="/quiz" className="hover:text-zinc-700">Which Domain?</Link>
             <Link to="/pricing" className="hover:text-zinc-700">Pricing</Link>
             <Link to="/templates" className="hover:text-zinc-700">Templates</Link>
+            <Link to="/examples" className="hover:text-zinc-700">Examples</Link>
+            <Link to="/terms" className="hover:text-zinc-700">Terms</Link>
+            <Link to="/privacy" className="hover:text-zinc-700">Privacy</Link>
           </div>
         </div>
       </footer>

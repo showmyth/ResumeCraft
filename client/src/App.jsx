@@ -6,12 +6,18 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import LandingPage from "./pages/Landing";
 import LoginPage from "./pages/Login";
 import RegisterPage from "./pages/Register";
+import ForgotPasswordPage from "./pages/ForgotPassword";
+import ResetPasswordPage from "./pages/ResetPassword";
 import DashboardPage from "./pages/dashboard/Dashboard";
 import ResumesPage from "./pages/dashboard/Resumes";
 import BuilderPage from "./pages/dashboard/Builder";
 import SettingsPage from "./pages/dashboard/Settings";
 import PricingPage from "./pages/Pricing";
 import TemplatesPage from "./pages/Templates";
+import QuizPage from "./pages/Quiz";
+import ExamplesPage from "./pages/Examples";
+import TermsPage from "./pages/Terms";
+import PrivacyPage from "./pages/Privacy";
 
 // Admin Pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -73,8 +79,14 @@ export default function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/templates" element={<TemplatesPage />} />
+          <Route path="/quiz" element={<QuizPage />} />
+          <Route path="/examples" element={<ExamplesPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
           <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
+          <Route path="/forgot-password" element={<GuestRoute><ForgotPasswordPage /></GuestRoute>} />
+          <Route path="/reset-password/:token" element={<GuestRoute><ResetPasswordPage /></GuestRoute>} />
 
           {/* User Dashboard */}
           <Route path="/dashboard" element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>

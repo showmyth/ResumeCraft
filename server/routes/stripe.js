@@ -1,6 +1,7 @@
 import express from "express";
 import Stripe from "stripe";
 import User from "../models/User.js";
+import { logger } from "../services/logging/logger.js";
 
 const router = express.Router();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -17,7 +18,7 @@ router.post("/webhook", async (req, res) => {
       process.env.STRIPE_WEBHOOK_SECRET
     );
   } catch (err) {
-    console.error("Webhook signature failed:", err.message);
+    logger.warn("Stripe webhook signature verification failed", { error: err.message });
     return res.status(400).json({ error: "Invalid signature" });
   }
 
@@ -101,7 +102,7 @@ router.post("/webhook", async (req, res) => {
       }
     }
   } catch (err) {
-    console.error("Webhook handler error:", err);
+    logger.error("Stripe webhook handler error", { eventType: event?.type, error: err.message });
   }
 
   res.json({ received: true });

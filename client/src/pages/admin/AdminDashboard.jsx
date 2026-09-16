@@ -3,11 +3,13 @@ import { Link } from "react-router-dom";
 import api from "../../utils/api";
 import { Users, FileText, TrendingUp, Download, UserPlus, Crown, Activity, ArrowRight } from "lucide-react";
 import { formatDate, cn } from "../../utils/helpers";
+import toast from "react-hot-toast";
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
   const [activity, setActivity] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -16,8 +18,10 @@ export default function AdminDashboard() {
     ]).then(([s, a]) => {
       setStats(s.data.stats);
       setActivity(a.data);
-      setLoading(false);
-    });
+    }).catch(() => {
+      setLoadError(true);
+      toast.error("Failed to load admin dashboard data");
+    }).finally(() => setLoading(false));
   }, []);
 
   if (loading) return (
@@ -25,6 +29,12 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {[1,2,3,4].map(i => <div key={i} className="h-28 rounded-2xl bg-zinc-800 animate-pulse" />)}
       </div>
+    </div>
+  );
+
+  if (loadError || !stats) return (
+    <div className="p-8 text-center">
+      <p className="text-zinc-500 text-sm mb-3">Couldn't load the dashboard. Please refresh the page.</p>
     </div>
   );
 

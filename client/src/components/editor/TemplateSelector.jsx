@@ -1,53 +1,11 @@
 import { Link } from "react-router-dom";
-import { Check, Lock } from "lucide-react";
+import { Check, Lock, Sparkles } from "lucide-react";
 import { cn, TEMPLATE_GRADIENTS } from "../../utils/helpers";
+import { LAYOUTS, DOMAIN_DEFAULT_LAYOUT, getDomainLabel } from "../../utils/domains";
 
-const TEMPLATES = [
-  {
-    id: "modern",
-    name: "Modern",
-    isPro: false,
-    desc: "Two-column with color accents",
-    tag: "Most Popular",
-  },
-  {
-    id: "classic",
-    name: "Classic",
-    isPro: false,
-    desc: "Traditional, ATS-optimized",
-    tag: "ATS Best",
-  },
-  {
-    id: "executive",
-    name: "Executive",
-    isPro: true,
-    desc: "Bold header for senior roles",
-    tag: null,
-  },
-  {
-    id: "creative",
-    name: "Creative",
-    isPro: true,
-    desc: "Stands out in creative fields",
-    tag: null,
-  },
-  {
-    id: "minimal",
-    name: "Minimal",
-    isPro: true,
-    desc: "Ultra-clean whitespace design",
-    tag: null,
-  },
-  {
-    id: "tech",
-    name: "Tech",
-    isPro: true,
-    desc: "Engineered for developers",
-    tag: "Dev Favourite",
-  },
-];
+export default function TemplateSelector({ selected, onSelect, isPro, domain }) {
+  const recommendedId = DOMAIN_DEFAULT_LAYOUT[domain];
 
-export default function TemplateSelector({ selected, onSelect, isPro }) {
   return (
     <div className="p-5">
       {/* Header */}
@@ -55,16 +13,17 @@ export default function TemplateSelector({ selected, onSelect, isPro }) {
         <h3 className="text-sm font-bold text-zinc-800 mb-1">Choose Template</h3>
         <p className="text-xs text-zinc-500">
           {isPro
-            ? "All 6 templates unlocked ✓"
-            : "2 free templates · Upgrade to Pro for all 6"}
+            ? "All 5 layouts unlocked ✓"
+            : "1 free layout · Upgrade to Pro for all 5"}
         </p>
       </div>
 
       {/* Template grid */}
       <div className="grid grid-cols-2 gap-3 mb-5">
-        {TEMPLATES.map((t) => {
+        {LAYOUTS.map((t) => {
           const locked = t.isPro && !isPro;
           const isSelected = selected === t.id;
+          const isRecommended = t.id === recommendedId;
           const gradient = TEMPLATE_GRADIENTS[t.id];
 
           return (
@@ -83,23 +42,14 @@ export default function TemplateSelector({ selected, onSelect, isPro }) {
               )}
             >
               {/* Preview area */}
-              <div
-                className={cn(
-                  "h-24 bg-gradient-to-br relative overflow-hidden",
-                  gradient
-                )}
-              >
+              <div className={cn("h-24 bg-gradient-to-br relative overflow-hidden", gradient)}>
                 {/* Mock resume lines */}
                 <div className="absolute inset-3 space-y-1">
                   <div className="h-2 w-14 bg-white/50 rounded" />
                   <div className="h-1 w-9 bg-white/30 rounded" />
                   <div className="mt-1.5 space-y-1">
                     {[70, 90, 55, 75].map((w, i) => (
-                      <div
-                        key={i}
-                        className="h-1 bg-white/20 rounded"
-                        style={{ width: `${w}%` }}
-                      />
+                      <div key={i} className="h-1 bg-white/20 rounded" style={{ width: `${w}%` }} />
                     ))}
                   </div>
                 </div>
@@ -128,14 +78,20 @@ export default function TemplateSelector({ selected, onSelect, isPro }) {
                   </div>
                 )}
 
-                {/* Tag badge (Most Popular, etc.) */}
-                {t.tag && !t.isPro && (
+                {/* Recommended badge takes priority over the static tag */}
+                {isRecommended ? (
+                  <div className="absolute bottom-1.5 left-1.5">
+                    <span className="flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-white/90 text-brand-700">
+                      <Sparkles className="w-2.5 h-2.5" /> Recommended
+                    </span>
+                  </div>
+                ) : t.tag && !t.isPro ? (
                   <div className="absolute bottom-1.5 left-1.5">
                     <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-white/80 text-zinc-700">
                       {t.tag}
                     </span>
                   </div>
-                )}
+                ) : null}
 
                 {/* Active glow effect */}
                 {isSelected && (
@@ -144,18 +100,8 @@ export default function TemplateSelector({ selected, onSelect, isPro }) {
               </div>
 
               {/* Info below preview */}
-              <div
-                className={cn(
-                  "p-2.5 transition-colors",
-                  isSelected ? "bg-brand-50" : "bg-white"
-                )}
-              >
-                <p
-                  className={cn(
-                    "text-xs font-bold leading-none mb-0.5",
-                    isSelected ? "text-brand-700" : "text-zinc-800"
-                  )}
-                >
+              <div className={cn("p-2.5 transition-colors", isSelected ? "bg-brand-50" : "bg-white")}>
+                <p className={cn("text-xs font-bold leading-none mb-0.5", isSelected ? "text-brand-700" : "text-zinc-800")}>
                   {t.name}
                 </p>
                 <p className="text-[10px] text-zinc-400 leading-tight">{t.desc}</p>
@@ -167,15 +113,15 @@ export default function TemplateSelector({ selected, onSelect, isPro }) {
 
       {/* Currently selected indicator */}
       <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-50 border border-zinc-200 mb-4">
-        <div
-          className={cn(
-            "w-3 h-3 rounded-full bg-gradient-to-br flex-shrink-0",
-            TEMPLATE_GRADIENTS[selected]
-          )}
-        />
+        <div className={cn("w-3 h-3 rounded-full bg-gradient-to-br flex-shrink-0", TEMPLATE_GRADIENTS[selected])} />
         <p className="text-xs text-zinc-600">
           Using:{" "}
-          <span className="font-semibold text-zinc-800 capitalize">{selected}</span>
+          <span className="font-semibold text-zinc-800">
+            {LAYOUTS.find((t) => t.id === selected)?.name || selected}
+          </span>
+          {domain && (
+            <span className="text-zinc-400"> · recommended for {getDomainLabel(domain)}: {LAYOUTS.find(l => l.id === recommendedId)?.name}</span>
+          )}
         </p>
       </div>
 
@@ -184,19 +130,19 @@ export default function TemplateSelector({ selected, onSelect, isPro }) {
         <div className="rounded-xl overflow-hidden border border-brand-100">
           <div className="bg-gradient-to-r from-brand-600 to-brand-700 p-3">
             <p className="text-xs font-bold text-white mb-0.5">
-              Unlock all 6 templates
+              Unlock all 5 templates
             </p>
             <p className="text-[11px] text-white/80">
-              Executive, Creative, Minimal & Tech are Pro-only.
+              Infosec, DevOps/SRE, Systems, and CV-Hybrid are Pro-only.
             </p>
           </div>
           <div className="bg-brand-50 p-3">
             <ul className="space-y-1 mb-3">
               {[
-                "Executive — senior roles",
-                "Creative — design & marketing",
-                "Minimal — timeless elegance",
-                "Tech — built for developers",
+                "Infosec — certs & skills matrix upfront",
+                "DevOps/SRE — infra stack & metrics band",
+                "Systems — hardware, patents, benchmarks",
+                "CV-Hybrid — publications & research experience",
               ].map((item) => (
                 <li key={item} className="flex items-center gap-1.5 text-[11px] text-brand-700">
                   <Check className="w-3 h-3 text-brand-500 flex-shrink-0" />

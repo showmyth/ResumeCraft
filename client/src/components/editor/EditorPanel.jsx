@@ -3,7 +3,8 @@ import api from "../../utils/api";
 import {
   User, Briefcase, GraduationCap, Wrench, FolderOpen,
   Award, Languages, FileText, ChevronDown, ChevronUp,
-  PlusCircle, Trash2, Sparkles, Loader2
+  PlusCircle, Trash2, Sparkles, Loader2,
+  Grid3x3, Flag, Server, BarChart3, Cpu, FileBadge, Gauge, BookOpen, FlaskConical
 } from "lucide-react";
 import { cn, generateId } from "../../utils/helpers";
 import toast from "react-hot-toast";
@@ -19,9 +20,76 @@ const SECTIONS = [
   { id: "languages", label: "Languages", icon: Languages },
 ];
 
-export default function EditorPanel({ content, onChange, isPro, resumeId }) {
+// Domain-specific sections, shown only for the layout(s) that render
+// them (see server/templates/latex/*.js for which layout uses which
+// block). Kept out of the base SECTIONS list so Jake's Resume users
+// (SWE/Data Eng/AI-ML/Cloud/DB — most students) aren't shown fields
+// their template ignores.
+const TEMPLATE_SECTIONS = {
+  infosec: [
+    { id: "skillsMatrix", label: "Skills Matrix", icon: Grid3x3 },
+    { id: "ctfToolingProjects", label: "CTF & Tooling", icon: Flag },
+  ],
+  "devops-sre": [
+    { id: "infraStack", label: "Infra & Tools Stack", icon: Server },
+    { id: "metrics", label: "Key Metrics", icon: BarChart3 },
+  ],
+  "systems-lowlevel": [
+    { id: "hardwareLanguages", label: "Languages & Hardware", icon: Cpu },
+    { id: "patents", label: "Patents", icon: FileBadge },
+    { id: "benchmarks", label: "Benchmarks", icon: Gauge },
+  ],
+  "cv-hybrid": [
+    { id: "publications", label: "Publications", icon: BookOpen },
+    { id: "researchExperience", label: "Research Experience", icon: FlaskConical },
+  ],
+};
+
+// Layout accent colors — mirrors the accent colors used in the actual
+// LaTeX output (server/templates/latex/*.js) so the editor visually
+// ties back to what the exported PDF will look like.
+const LAYOUT_ACCENTS = {
+  infosec: "#1F3B4D",
+  "devops-sre": "#0F766E",
+  "systems-lowlevel": "#3F3F46",
+  "cv-hybrid": "#5B21B6",
+};
+
+// Which content field each section's item count is read from — powers
+// the "(3)" count badge in the accordion header. Sections not listed
+// here (personal, summary) don't have a natural count.
+const SECTION_COUNT_FIELD = {
+  experience: "experience", education: "education", skills: "skills",
+  projects: "projects", certifications: "certifications", languages: "languages",
+  skillsMatrix: "skillsMatrix", ctfToolingProjects: "ctfToolingProjects",
+  infraStack: "infraStack", metrics: "metrics", hardwareLanguages: "hardwareLanguages",
+  patents: "patents", benchmarks: "benchmarks", publications: "publications",
+  researchExperience: "researchExperience",
+};
+// shared by every domain-specific section below instead of each one
+// reimplementing the same three closures.
+function listOps(fieldName, onChange) {
+  return {
+    add: (defaults = {}) => onChange(p => ({
+      ...p,
+      [fieldName]: [...(p[fieldName] || []), { id: generateId(), ...defaults }],
+    })),
+    update: (id, field, value) => onChange(p => ({
+      ...p,
+      [fieldName]: (p[fieldName] || []).map(x => x.id === id ? { ...x, [field]: value } : x),
+    })),
+    remove: (id) => onChange(p => ({
+      ...p,
+      [fieldName]: (p[fieldName] || []).filter(x => x.id !== id),
+    })),
+  };
+}
+
+export default function EditorPanel({ content, onChange, isPro, resumeId, domain, templateId }) {
   const [open, setOpen] = useState("personal");
   const [aiLoading, setAiLoading] = useState(null);
+
+  const extraSections = TEMPLATE_SECTIONS[templateId] || [];
 
   async function callAI(action, text, field, context) {
     if (!isPro) { toast.error("AI features require Pro. Upgrade to unlock!"); return null; }
@@ -30,6 +98,7 @@ export default function EditorPanel({ content, onChange, isPro, resumeId }) {
       const { data } = await api.post("/ai/generate", {
         action, content: text,
         jobTitle: content?.personal?.title,
+        domain,
         context,
       });
       toast.success(`${data.creditsUsed}/${data.creditsLimit} AI credits used`);
@@ -56,16 +125,26 @@ export default function EditorPanel({ content, onChange, isPro, resumeId }) {
 
   return (
     <div className="pb-8">
-      {SECTIONS.map(sec => (
+      {[...SECTIONS, ...extraSections].map(sec => {
+        const isDomainSection = Boolean(TEMPLATE_SECTIONS[templateId]?.some(s => s.id === sec.id));
+        const accent = isDomainSection ? LAYOUT_ACCENTS[templateId] : null;
+        const countField = SECTION_COUNT_FIELD[sec.id];
+        const count = countField ? (content[countField] || []).length : null;
+
+        return (
         <div key={sec.id} className="border-b border-zinc-100 last:border-0">
           <button onClick={() => setOpen(open === sec.id ? "" : sec.id)}
             className="w-full flex items-center justify-between px-5 py-4 hover:bg-zinc-50 transition-colors">
             <div className="flex items-center gap-3">
               <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center",
-                open === sec.id ? "bg-brand-100 text-brand-600" : "bg-zinc-100 text-zinc-500")}>
+                open === sec.id && !accent ? "bg-brand-100 text-brand-600" : !accent && "bg-zinc-100 text-zinc-500")}
+                style={accent ? { backgroundColor: open === sec.id ? accent : `${accent}1A`, color: open === sec.id ? "#fff" : accent } : undefined}>
                 <sec.icon className="w-3.5 h-3.5" />
               </div>
               <span className="text-sm font-semibold text-zinc-700">{sec.label}</span>
+              {count > 0 && (
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-zinc-100 text-zinc-500">{count}</span>
+              )}
             </div>
             {open === sec.id ? <ChevronUp className="w-4 h-4 text-zinc-400" /> : <ChevronDown className="w-4 h-4 text-zinc-400" />}
           </button>
@@ -80,10 +159,36 @@ export default function EditorPanel({ content, onChange, isPro, resumeId }) {
               {sec.id === "projects" && <ProjectsSection content={content} onChange={onChange} />}
               {sec.id === "certifications" && <CertsSection content={content} onChange={onChange} />}
               {sec.id === "languages" && <LanguagesSection content={content} onChange={onChange} />}
+              {sec.id === "skillsMatrix" && <SkillsMatrixSection content={content} onChange={onChange} />}
+              {sec.id === "ctfToolingProjects" && <CtfToolingSection content={content} onChange={onChange} />}
+              {sec.id === "infraStack" && <InfraStackSection content={content} onChange={onChange} />}
+              {sec.id === "metrics" && <MetricsSection content={content} onChange={onChange} />}
+              {sec.id === "hardwareLanguages" && <HardwareLanguagesSection content={content} onChange={onChange} />}
+              {sec.id === "patents" && <PatentsSection content={content} onChange={onChange} />}
+              {sec.id === "benchmarks" && <BenchmarksSection content={content} onChange={onChange} />}
+              {sec.id === "publications" && <PublicationsSection content={content} onChange={onChange} />}
+              {sec.id === "researchExperience" && <ResearchExperienceSection content={content} onChange={onChange} />}
             </div>
           )}
         </div>
-      ))}
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Empty state ───────────────────────────────────────────────────────────────
+// Shown instead of a bare "Add" button when a domain-specific section has
+// no entries yet — gives context on why the section matters and what
+// good input looks like, rather than an unexplained empty list.
+function EmptyState({ icon: Icon, title, description }) {
+  return (
+    <div className="flex flex-col items-center text-center px-6 py-8 mb-3 rounded-xl bg-zinc-50 border border-dashed border-zinc-200">
+      <div className="w-10 h-10 rounded-full bg-white border border-zinc-200 flex items-center justify-center mb-3">
+        <Icon className="w-4.5 h-4.5 text-zinc-400" />
+      </div>
+      <p className="text-sm font-semibold text-zinc-600 mb-1">{title}</p>
+      <p className="text-xs text-zinc-400 max-w-xs">{description}</p>
     </div>
   );
 }
@@ -368,6 +473,303 @@ function LanguagesSection({ content, onChange }) {
         </div>
       ))}
       <AddBtn onClick={add} label="Add Language" />
+    </div>
+  );
+}
+
+// ── Skills Matrix (Infosec) ───────────────────────────────────────────────────
+function SkillsMatrixSection({ content, onChange }) {
+  const { add, update, remove } = listOps("skillsMatrix", onChange);
+  const levels = ["Familiar", "Proficient", "Advanced", "Expert"];
+  const items = content.skillsMatrix || [];
+  return (
+    <div>
+      <p className="text-[11px] text-zinc-400 mb-3">Shown as a table on the Infosec layout — falls back to the plain Skills section if left empty.</p>
+      {items.length === 0 && (
+        <EmptyState icon={Grid3x3} title="No skills matrix yet"
+          description="Group your security skills by category (e.g. AppSec, Cloud Security) with a proficiency level — shown as a table, more scannable than a plain list." />
+      )}
+      {items.map((row, idx) => (
+        <div key={row.id} className="mb-3 p-4 rounded-xl bg-zinc-50 border border-zinc-200">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold text-zinc-400">Row {idx + 1}</span>
+            <RemoveBtn onClick={() => remove(row.id)} />
+          </div>
+          <F label="Category"><I value={row.category} onChange={v => update(row.id, "category", v)} placeholder="AppSec" /></F>
+          <F label="Tools/Items (comma-separated)">
+            <I value={(row.items || []).join(", ")} onChange={v => update(row.id, "items", v.split(",").map(s => s.trim()).filter(Boolean))} placeholder="SAST, DAST, Burp Suite" />
+          </F>
+          <F label="Proficiency">
+            <select value={row.proficiency || ""} onChange={e => update(row.id, "proficiency", e.target.value)} className="input">
+              <option value="">Select...</option>
+              {levels.map(lv => <option key={lv} value={lv}>{lv}</option>)}
+            </select>
+          </F>
+        </div>
+      ))}
+      <AddBtn onClick={() => add({ category: "", items: [], proficiency: "" })} label="Add Skills Matrix Row" />
+    </div>
+  );
+}
+
+// ── CTF & Tooling (Infosec) ───────────────────────────────────────────────────
+function CtfToolingSection({ content, onChange }) {
+  const { add, update, remove } = listOps("ctfToolingProjects", onChange);
+  const items = content.ctfToolingProjects || [];
+  return (
+    <div>
+      <p className="text-[11px] text-zinc-400 mb-3">A dedicated section on the Infosec layout — placements and tooling recruiters actually look for.</p>
+      {items.length === 0 && (
+        <EmptyState icon={Flag} title="No CTF or tooling entries yet"
+          description="HackTheBox/picoCTF placements, security tools you've built or used — this signals hands-on skill beyond coursework." />
+      )}
+      {items.map((c, idx) => (
+        <div key={c.id} className="mb-3 p-4 rounded-xl bg-zinc-50 border border-zinc-200">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold text-zinc-400">Entry {idx + 1}</span>
+            <RemoveBtn onClick={() => remove(c.id)} />
+          </div>
+          <F label="Name"><I value={c.name} onChange={v => update(c.id, "name", v)} placeholder="Web Exploitation Series" /></F>
+          <div className="grid grid-cols-2 gap-3">
+            <F label="Platform"><I value={c.platform} onChange={v => update(c.id, "platform", v)} placeholder="HackTheBox" /></F>
+            <F label="Rank/Result"><I value={c.rank} onChange={v => update(c.id, "rank", v)} placeholder="Top 5%" /></F>
+          </div>
+          <F label="Write-up URL"><I value={c.writeupUrl} onChange={v => update(c.id, "writeupUrl", v)} placeholder="https://..." /></F>
+          <F label="Tools (comma-separated)">
+            <I value={(c.tools || []).join(", ")} onChange={v => update(c.id, "tools", v.split(",").map(s => s.trim()).filter(Boolean))} placeholder="Burp Suite, sqlmap, ffuf" />
+          </F>
+        </div>
+      ))}
+      <AddBtn onClick={() => add({ name: "", platform: "", rank: "", writeupUrl: "", tools: [] })} label="Add CTF / Tooling Entry" />
+    </div>
+  );
+}
+
+// ── Infra & Tools Stack (DevOps/SRE) ──────────────────────────────────────────
+function InfraStackSection({ content, onChange }) {
+  const { add, update, remove } = listOps("infraStack", onChange);
+  const items = content.infraStack || [];
+  return (
+    <div>
+      <p className="text-[11px] text-zinc-400 mb-3">Shown above Experience on the DevOps/SRE layout — falls back to the plain Skills section if left empty.</p>
+      {items.length === 0 && (
+        <EmptyState icon={Server} title="No infra stack yet"
+          description="Group tools by category — Orchestration, IaC, Observability — this is usually the first thing an infra hiring manager scans for." />
+      )}
+      {items.map((row, idx) => (
+        <div key={row.id} className="mb-3 p-4 rounded-xl bg-zinc-50 border border-zinc-200">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold text-zinc-400">Category {idx + 1}</span>
+            <RemoveBtn onClick={() => remove(row.id)} />
+          </div>
+          <F label="Category"><I value={row.category} onChange={v => update(row.id, "category", v)} placeholder="Orchestration" /></F>
+          <F label="Tools (comma-separated)">
+            <I value={(row.tools || []).join(", ")} onChange={v => update(row.id, "tools", v.split(",").map(s => s.trim()).filter(Boolean))} placeholder="Kubernetes, Helm" />
+          </F>
+        </div>
+      ))}
+      <AddBtn onClick={() => add({ category: "", tools: [] })} label="Add Infra Category" />
+    </div>
+  );
+}
+
+// ── Key Metrics (DevOps/SRE) ──────────────────────────────────────────────────
+function MetricsSection({ content, onChange }) {
+  const { add, update, remove } = listOps("metrics", onChange);
+  const items = content.metrics || [];
+  return (
+    <div>
+      <p className="text-[11px] text-zinc-400 mb-3">Rendered as a stat band under your name (e.g. "12x/day — Deploy frequency").</p>
+      {items.length === 0 && (
+        <EmptyState icon={BarChart3} title="No metrics yet"
+          description="Deploy frequency, MTTR, uptime — the numbers SRE/DevOps roles get judged on. 2-3 strong ones is plenty." />
+      )}
+      {items.map((m, idx) => (
+        <div key={m.id} className="mb-3 p-4 rounded-xl bg-zinc-50 border border-zinc-200">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold text-zinc-400">Metric {idx + 1}</span>
+            <RemoveBtn onClick={() => remove(m.id)} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <F label="Value"><I value={m.value} onChange={v => update(m.id, "value", v)} placeholder="12x/day" /></F>
+            <F label="Label"><I value={m.label} onChange={v => update(m.id, "label", v)} placeholder="Deploy frequency" /></F>
+          </div>
+          <F label="Context (optional)"><I value={m.context} onChange={v => update(m.id, "context", v)} placeholder="up from weekly releases" /></F>
+        </div>
+      ))}
+      <AddBtn onClick={() => add({ label: "", value: "", context: "" })} label="Add Metric" />
+    </div>
+  );
+}
+
+// ── Languages & Hardware (Systems/Low-Level) ──────────────────────────────────
+function HardwareLanguagesSection({ content, onChange }) {
+  const { add, update, remove } = listOps("hardwareLanguages", onChange);
+  const items = content.hardwareLanguages || [];
+  return (
+    <div>
+      <p className="text-[11px] text-zinc-400 mb-3">Shown first on the Systems layout — falls back to the plain Skills section if left empty.</p>
+      {items.length === 0 && (
+        <EmptyState icon={Cpu} title="No languages/hardware yet"
+          description="Pair each language with the hardware you've targeted — e.g. C on ARM Cortex-M4 — firmware roles scan for this before anything else." />
+      )}
+      {items.map((row, idx) => (
+        <div key={row.id} className="mb-3 p-4 rounded-xl bg-zinc-50 border border-zinc-200">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold text-zinc-400">Row {idx + 1}</span>
+            <RemoveBtn onClick={() => remove(row.id)} />
+          </div>
+          <F label="Language"><I value={row.language} onChange={v => update(row.id, "language", v)} placeholder="C" /></F>
+          <F label="Target Hardware (comma-separated)">
+            <I value={(row.hardware || []).join(", ")} onChange={v => update(row.id, "hardware", v.split(",").map(s => s.trim()).filter(Boolean))} placeholder="ARM Cortex-M4, AVR" />
+          </F>
+        </div>
+      ))}
+      <AddBtn onClick={() => add({ language: "", hardware: [] })} label="Add Language/Hardware Row" />
+    </div>
+  );
+}
+
+// ── Patents (Systems/Low-Level) ───────────────────────────────────────────────
+function PatentsSection({ content, onChange }) {
+  const { add, update, remove } = listOps("patents", onChange);
+  const statuses = ["Filed", "Pending", "Granted"];
+  const items = content.patents || [];
+  return (
+    <div>
+      <p className="text-[11px] text-zinc-400 mb-3">Filed, pending, or granted — most resumes have nowhere to put this. Optional if you don't have any.</p>
+      {items.length === 0 && (
+        <EmptyState icon={FileBadge} title="No patents yet"
+          description="If you've filed or been granted a patent — even student/university-assigned — it's a strong differentiator for systems roles." />
+      )}
+      {items.map((pt, idx) => (
+        <div key={pt.id} className="mb-3 p-4 rounded-xl bg-zinc-50 border border-zinc-200">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold text-zinc-400">Patent {idx + 1}</span>
+            <RemoveBtn onClick={() => remove(pt.id)} />
+          </div>
+          <F label="Title"><I value={pt.title} onChange={v => update(pt.id, "title", v)} placeholder="Low-power sensor fusion method" /></F>
+          <div className="grid grid-cols-2 gap-3">
+            <F label="Number"><I value={pt.number} onChange={v => update(pt.id, "number", v)} placeholder="US-2024-1234" /></F>
+            <F label="Date"><I value={pt.date} onChange={v => update(pt.id, "date", v)} placeholder="2024" /></F>
+          </div>
+          <F label="Status">
+            <select value={pt.status || ""} onChange={e => update(pt.id, "status", e.target.value)} className="input">
+              <option value="">Select...</option>
+              {statuses.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </F>
+        </div>
+      ))}
+      <AddBtn onClick={() => add({ title: "", number: "", status: "", date: "" })} label="Add Patent" />
+    </div>
+  );
+}
+
+// ── Benchmarks (Systems/Low-Level) ────────────────────────────────────────────
+function BenchmarksSection({ content, onChange }) {
+  const { add, update, remove } = listOps("benchmarks", onChange);
+  const items = content.benchmarks || [];
+  return (
+    <div>
+      <p className="text-[11px] text-zinc-400 mb-3">Rendered as a stat band under your name (e.g. "1.2us — Interrupt latency").</p>
+      {items.length === 0 && (
+        <EmptyState icon={Gauge} title="No benchmarks yet"
+          description="Latency, throughput, power draw — the performance numbers systems roles are judged on. 2-3 strong ones is plenty." />
+      )}
+      {items.map((b, idx) => (
+        <div key={b.id} className="mb-3 p-4 rounded-xl bg-zinc-50 border border-zinc-200">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold text-zinc-400">Benchmark {idx + 1}</span>
+            <RemoveBtn onClick={() => remove(b.id)} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <F label="Value"><I value={b.value} onChange={v => update(b.id, "value", v)} placeholder="1.2us" /></F>
+            <F label="Metric"><I value={b.metric} onChange={v => update(b.id, "metric", v)} placeholder="Interrupt latency" /></F>
+          </div>
+          <F label="Comparison (optional)"><I value={b.comparison} onChange={v => update(b.id, "comparison", v)} placeholder="-40% vs prior firmware" /></F>
+        </div>
+      ))}
+      <AddBtn onClick={() => add({ metric: "", value: "", comparison: "" })} label="Add Benchmark" />
+    </div>
+  );
+}
+
+// ── Publications (CV-Hybrid) ──────────────────────────────────────────────────
+function PublicationsSection({ content, onChange }) {
+  const { add, update, remove } = listOps("publications", onChange);
+  const items = content.publications || [];
+  return (
+    <div>
+      <p className="text-[11px] text-zinc-400 mb-3">Rendered as a real bibliography entry — this is usually the first thing a research-facing reviewer looks for.</p>
+      {items.length === 0 && (
+        <EmptyState icon={BookOpen} title="No publications yet"
+          description="Workshop papers count too, not just top-tier venues — include authors in the exact order they appear on the paper." />
+      )}
+      {items.map((pub, idx) => (
+        <div key={pub.id} className="mb-4 p-4 rounded-xl bg-zinc-50 border border-zinc-200">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold text-zinc-400">Publication {idx + 1}</span>
+            <RemoveBtn onClick={() => remove(pub.id)} />
+          </div>
+          <F label="Title"><I value={pub.title} onChange={v => update(pub.id, "title", v)} placeholder="Self-Supervised Video Representations..." /></F>
+          <F label="Authors (comma-separated, in order)">
+            <I value={(pub.authors || []).join(", ")} onChange={v => update(pub.id, "authors", v.split(",").map(s => s.trim()).filter(Boolean))} placeholder="W. Chen, A. Kumar, S. Lee" />
+          </F>
+          <div className="grid grid-cols-2 gap-3">
+            <F label="Venue"><I value={pub.venue} onChange={v => update(pub.id, "venue", v)} placeholder="CVPR" /></F>
+            <F label="Year"><I value={pub.year} onChange={v => update(pub.id, "year", v)} placeholder="2024" /></F>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <F label="URL"><I value={pub.url} onChange={v => update(pub.id, "url", v)} placeholder="https://..." /></F>
+            <F label="Citation Count"><I value={pub.citationCount} onChange={v => update(pub.id, "citationCount", v)} placeholder="42" type="number" /></F>
+          </div>
+        </div>
+      ))}
+      <AddBtn onClick={() => add({ title: "", authors: [], venue: "", year: "", url: "", citationCount: "" })} label="Add Publication" />
+    </div>
+  );
+}
+
+// ── Research Experience (CV-Hybrid) ───────────────────────────────────────────
+function ResearchExperienceSection({ content, onChange }) {
+  const { add, update, remove } = listOps("researchExperience", onChange);
+  const items = content.researchExperience || [];
+  return (
+    <div>
+      <p className="text-[11px] text-zinc-400 mb-3">Kept separate from Industry Experience so advisor/lab/funding lineage stays visible.</p>
+      {items.length === 0 && (
+        <EmptyState icon={FlaskConical} title="No research experience yet"
+          description="Lab, advisor, and funding source — this is what keeps your academic lineage visible alongside industry experience." />
+      )}
+      {items.map((r, idx) => (
+        <div key={r.id} className="mb-4 p-4 rounded-xl bg-zinc-50 border border-zinc-200">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold text-zinc-400">Entry {idx + 1}</span>
+            <RemoveBtn onClick={() => remove(r.id)} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <F label="Lab"><I value={r.lab} onChange={v => update(r.id, "lab", v)} placeholder="Vision & Learning Lab" /></F>
+            <F label="Institution"><I value={r.institution} onChange={v => update(r.id, "institution", v)} placeholder="Stanford" /></F>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <F label="Advisor"><I value={r.advisor} onChange={v => update(r.id, "advisor", v)} placeholder="Prof. A. Kumar" /></F>
+            <F label="Funding Source"><I value={r.fundingSource} onChange={v => update(r.id, "fundingSource", v)} placeholder="NSF Graduate Fellowship" /></F>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <F label="Start Date"><I value={r.startDate} onChange={v => update(r.id, "startDate", v)} placeholder="2021" /></F>
+            <F label="End Date"><I value={r.current ? "Present" : r.endDate} onChange={v => update(r.id, "endDate", v)} placeholder="2023" /></F>
+          </div>
+          <label className="flex items-center gap-2 mb-3 text-xs text-zinc-500">
+            <input type="checkbox" checked={!!r.current} onChange={e => update(r.id, "current", e.target.checked)} />
+            Currently active
+          </label>
+          <F label="Bullet Points (one per line)">
+            <T value={(r.bullets || []).join("\n")} onChange={v => update(r.id, "bullets", v.split("\n").filter(Boolean))} placeholder="Led a 3-person team on video SSL pretraining…" rows={3} />
+          </F>
+        </div>
+      ))}
+      <AddBtn onClick={() => add({ lab: "", institution: "", advisor: "", fundingSource: "", startDate: "", endDate: "", current: false, bullets: [] })} label="Add Research Experience" />
     </div>
   );
 }

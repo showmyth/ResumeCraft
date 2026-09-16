@@ -25,8 +25,7 @@ export default function AdminUserDetail() {
         role: data.user.role,
         aiCreditsLimit: data.user.usage?.aiCreditsLimit || 5,
       });
-      setLoading(false);
-    }).catch(() => toast.error("Failed to load user"));
+    }).catch(() => toast.error("Failed to load user")).finally(() => setLoading(false));
   }, [id]);
 
   async function handleSave() {
@@ -76,6 +75,13 @@ export default function AdminUserDetail() {
   if (loading) return (
     <div className="p-8 flex items-center justify-center">
       <Loader2 className="w-6 h-6 animate-spin text-zinc-500" />
+    </div>
+  );
+
+  if (!user) return (
+    <div className="p-8 text-center">
+      <p className="text-zinc-500 text-sm mb-3">Couldn't load this user — they may not exist or you may not have access.</p>
+      <Link to="/admin/users" className="text-sm text-brand-400 hover:underline">Back to Users</Link>
     </div>
   );
 

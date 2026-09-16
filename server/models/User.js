@@ -138,7 +138,8 @@ userSchema.methods.hasActiveSubscription = function () {
 };
 
 // ── Index ──────────────────────────────────────────────────────
-userSchema.index({ email: 1 });
+// email already has a unique index via `unique: true` on the field
+// definition above — no need to declare it again here.
 userSchema.index({ role: 1 });
 userSchema.index({ "subscription.plan": 1 });
 userSchema.index({ createdAt: -1 });

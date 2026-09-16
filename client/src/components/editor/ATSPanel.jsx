@@ -1,9 +1,11 @@
 import { Link } from "react-router-dom";
 import {
   TrendingUp, Check, X, Lock, Lightbulb,
-  AlertTriangle, ChevronRight, RefreshCw
+  AlertTriangle, ChevronRight, RefreshCw, Target
 } from "lucide-react";
 import { cn } from "../../utils/helpers";
+import { calculateDomainKeywordCoverage } from "../../utils/domainKeywords";
+import { getDomainLabel } from "../../utils/domains";
 
 // ── ATS Check definitions ─────────────────────────────────────────────────────
 // Each check has: label, description, points, and how to pass it
@@ -107,11 +109,12 @@ function getChecks(content) {
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
-export default function ATSPanel({ content, score, isPro }) {
+export default function ATSPanel({ content, score, isPro, domain = "swe" }) {
   const checks = getChecks(content);
   const passed = checks.filter((c) => c.pass).length;
   const failed = checks.filter((c) => !c.pass);
   const totalPoints = checks.reduce((a, c) => a + c.points, 0); // 100
+  const keywordCoverage = calculateDomainKeywordCoverage(content, domain);
 
   // Score color
   const scoreColor =
@@ -335,6 +338,48 @@ export default function ATSPanel({ content, score, isPro }) {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* ── Domain Keyword Coverage (additive, separate from the 100pt score) ── */}
+      <div className="mb-5 p-4 rounded-xl bg-zinc-50 border border-zinc-200">
+        <div className="flex items-center gap-2 mb-1">
+          <Target className="w-3.5 h-3.5 text-brand-600" />
+          <p className="text-xs font-bold text-zinc-700">
+            Domain Keyword Coverage — {getDomainLabel(domain)}
+          </p>
+        </div>
+        <p className="text-[11px] text-zinc-500 mb-3">
+          {keywordCoverage.matched.length}/{keywordCoverage.total} relevant keywords found across your summary, bullets, and skills.
+        </p>
+        <div className="h-1.5 w-full bg-zinc-200 rounded-full overflow-hidden mb-3">
+          <div
+            className="h-full rounded-full bg-brand-500 transition-all duration-500"
+            style={{ width: `${keywordCoverage.coveragePct}%` }}
+          />
+        </div>
+        {keywordCoverage.matched.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-2">
+            {keywordCoverage.matched.map((kw) => (
+              <span key={kw} className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
+                {kw}
+              </span>
+            ))}
+          </div>
+        )}
+        {keywordCoverage.missing.length > 0 && (
+          <>
+            <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mt-2 mb-1.5">
+              Consider weaving in
+            </p>
+            <div className="flex flex-wrap gap-1">
+              {keywordCoverage.missing.slice(0, 8).map((kw) => (
+                <span key={kw} className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-white text-zinc-500 border border-zinc-200">
+                  {kw}
+                </span>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       {/* ── Pro tips (shown to pro users) ── */}

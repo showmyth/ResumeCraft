@@ -4,6 +4,7 @@ import User from "../models/User.js";
 import { protect } from "../middleware/auth.js";
 import { generateLatex } from "../services/latex/tex_generator.js";
 import { compileToPDF } from "../services/latex/tex_compiler.js";
+import { DEFAULT_DOMAIN, DEFAULT_LAYOUT } from "../config/domains.js";
 
 const router = express.Router();
 
@@ -37,7 +38,8 @@ router.post("/", async (req, res, next) => {
     const resume = await Resume.create({
       user: req.user._id,
       title: req.body.title || "My Resume",
-      templateId: req.body.templateId || "modern",
+      domain: req.body.domain || DEFAULT_DOMAIN,
+      templateId: req.body.templateId || DEFAULT_LAYOUT,
       content: req.body.content || {},
     });
 
@@ -64,12 +66,13 @@ router.get("/:id", async (req, res, next) => {
 // ── PATCH /api/resumes/:id ─────────────────────────────────────
 router.patch("/:id", async (req, res, next) => {
   try {
-    const { title, templateId, content, atsScore } = req.body;
+    const { title, domain, templateId, content, atsScore } = req.body;
 
     const resume = await Resume.findOneAndUpdate(
       { _id: req.params.id, user: req.user._id },
       {
         ...(title !== undefined && { title }),
+        ...(domain !== undefined && { domain }),
         ...(templateId !== undefined && { templateId }),
         ...(content !== undefined && { content }),
         ...(atsScore !== undefined && { atsScore }),
@@ -120,6 +123,7 @@ router.post("/:id/duplicate", async (req, res, next) => {
     const duplicate = await Resume.create({
       user: req.user._id,
       title: `${original.title} (Copy)`,
+      domain: original.domain,
       templateId: original.templateId,
       content: original.content,
     });

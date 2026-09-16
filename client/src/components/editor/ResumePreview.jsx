@@ -6,6 +6,13 @@ export default function ResumePreview({ content, templateId, isPro }) {
   const p = content?.personal || {};
 
   const ACCENTS = {
+    // New real layout families
+    jakes:             "#18181b",
+    infosec:           "#1F3B4D",
+    "devops-sre":      "#0F766E",
+    "systems-lowlevel":"#3F3F46",
+    "cv-hybrid":       "#5B21B6",
+    // Legacy 6-color templates
     modern:    "#6470f3",
     classic:   "#1a1a1a",
     executive: "#1e3a5f",
@@ -13,7 +20,7 @@ export default function ResumePreview({ content, templateId, isPro }) {
     minimal:   "#171717",
     tech:      "#10b981",
   };
-  const accent = ACCENTS[templateId] || ACCENTS.modern;
+  const accent = ACCENTS[templateId] || ACCENTS.jakes;
 
   // ── Shared helpers ──────────────────────────────────────────────────────────
 
@@ -64,6 +71,399 @@ export default function ResumePreview({ content, templateId, isPro }) {
       </div>
     );
   }
+
+  // ── Jake's Resume ─────────────────────────────────────────────────────────
+  // Clean single-column, bullet-heavy, ATS-safe. Default layout for SWE,
+  // Data Eng, AI/ML, Cloud, and DB domains.
+  if (templateId === "jakes") return (
+    <div style={{ fontFamily:"Georgia,'Times New Roman',serif", color:"#18181b", fontSize:"10px",
+      lineHeight:1.5, padding:"40px", minHeight:"1123px", position:"relative" }}>
+      {!isPro && <WM />}
+      <div style={{ textAlign:"center", marginBottom:"10px" }}>
+        <h1 style={{ fontSize:"22px", fontWeight:700, margin:"0 0 2px" }}>{p.firstName||"Your"} {p.lastName||"Name"}</h1>
+        {p.title && <p style={{ fontSize:"11px", color:"#3f3f46", margin:"0 0 4px" }}>{p.title}</p>}
+        <div style={{ display:"flex", justifyContent:"center", flexWrap:"wrap", gap:"8px", fontSize:"8.5px", color:"#52525b" }}>
+          {[p.email, p.phone, p.location, p.linkedin, p.github, p.website].filter(Boolean).join(" | ")}
+        </div>
+      </div>
+      <div style={{ height:"1.5px", background:"#18181b", marginBottom:"6px" }} />
+      {content.summary && <>
+        <SecTitle title="Summary" />
+        <p style={{ fontSize:"9.5px", color:"#333" }}>{content.summary}</p>
+      </>}
+      {(content.experience||[]).length > 0 && <>
+        <SecTitle title="Experience" />
+        {content.experience.map(exp => (
+          <div key={exp.id} style={{ marginBottom:"10px" }}>
+            <div style={{ display:"flex", justifyContent:"space-between" }}>
+              <p style={{ fontWeight:700, fontSize:"10px" }}>{exp.position}</p>
+              <p style={{ fontSize:"8.5px", color:"#666" }}>{exp.startDate}{exp.endDate&&` – ${exp.endDate}`}</p>
+            </div>
+            <p style={{ fontSize:"9.5px", fontStyle:"italic", color:"#444", marginBottom:"3px" }}>{exp.company}{exp.location&&`, ${exp.location}`}</p>
+            {(exp.bullets||[]).map((b,i) => <Bullet key={i} text={b} color="#18181b" />)}
+          </div>
+        ))}
+      </>}
+      {(content.projects||[]).length > 0 && <>
+        <SecTitle title="Projects" />
+        {content.projects.map(proj => (
+          <div key={proj.id} style={{ marginBottom:"8px" }}>
+            <p style={{ fontWeight:700, fontSize:"9.5px" }}>{proj.name} {proj.technologies?.length ? <span style={{ fontWeight:400, fontSize:"8.5px", color:"#666" }}>— {proj.technologies.join(", ")}</span> : null}</p>
+            <p style={{ fontSize:"9px", color:"#444" }}>{proj.description}</p>
+          </div>
+        ))}
+      </>}
+      {(content.education||[]).length > 0 && <>
+        <SecTitle title="Education" />
+        {content.education.map(edu => (
+          <div key={edu.id} style={{ marginBottom:"6px", display:"flex", justifyContent:"space-between" }}>
+            <div>
+              <p style={{ fontWeight:700, fontSize:"9.5px" }}>{edu.institution}</p>
+              <p style={{ fontSize:"9px", color:"#444" }}>{edu.degree}{edu.field&&`, ${edu.field}`}{edu.gpa&&`  GPA: ${edu.gpa}`}</p>
+            </div>
+            <p style={{ fontSize:"8.5px", color:"#666" }}>{edu.endDate||edu.startDate}</p>
+          </div>
+        ))}
+      </>}
+      {(content.skills||[]).length > 0 && <>
+        <SecTitle title="Skills" />
+        {content.skills.map(cat => (
+          <p key={cat.id} style={{ fontSize:"9px", color:"#333", marginBottom:"2px" }}>
+            <strong>{cat.category}</strong>{cat.category&&": "}{(cat.items||[]).join(", ")}
+          </p>
+        ))}
+      </>}
+      {(content.certifications||[]).length > 0 && <>
+        <SecTitle title="Certifications" />
+        {content.certifications.map(c => (
+          <p key={c.id} style={{ fontSize:"9px", color:"#333", marginBottom:"2px" }}>{c.name}{c.issuer&&` — ${c.issuer}`}{c.date&&` (${c.date})`}</p>
+        ))}
+      </>}
+      {(content.languages||[]).length > 0 && <>
+        <SecTitle title="Languages" />
+        {content.languages.map(l => (
+          <p key={l.id} style={{ fontSize:"9px", color:"#333", marginBottom:"2px" }}>{l.language}{l.proficiency&&` — ${l.proficiency}`}</p>
+        ))}
+      </>}
+    </div>
+  );
+
+  // ── Infosec / Cybersecurity ──────────────────────────────────────────────
+  // Certifications block prominent, skills matrix, CTF/tooling sections.
+  if (templateId === "infosec") return (
+    <div style={{ fontFamily:"Georgia,'Times New Roman',serif", color:"#18181b", fontSize:"10px",
+      lineHeight:1.5, padding:"36px", minHeight:"1123px", position:"relative" }}>
+      {!isPro && <WM />}
+      <div style={{ textAlign:"center", marginBottom:"10px" }}>
+        <h1 style={{ fontSize:"22px", fontWeight:700, color:accent, margin:"0 0 2px" }}>{p.firstName||"Your"} {p.lastName||"Name"}</h1>
+        {p.title && <p style={{ fontSize:"11px", color:"#3f3f46", margin:"0 0 4px" }}>{p.title}</p>}
+        <ContactRow />
+      </div>
+      <div style={{ height:"1.5px", background:accent, marginBottom:"6px" }} />
+      {(content.certifications||[]).length > 0 && <>
+        <p style={{ fontSize:"9px", color:"#333", padding:"4px 0" }}>
+          <strong>Certifications:</strong> {content.certifications.map(c => `${c.name}${c.issuer?` (${c.issuer})`:""}${c.date?`, ${c.date}`:""}`).join("   |   ")}
+        </p>
+        <div style={{ height:"1px", background:"#ddd", marginBottom:"8px" }} />
+      </>}
+      {content.summary && <>
+        <SecTitle title="Summary" />
+        <p style={{ fontSize:"9.5px", color:"#333" }}>{content.summary}</p>
+      </>}
+      {(content.skillsMatrix||[]).length > 0 ? <>
+        <SecTitle title="Skills Matrix" />
+        {content.skillsMatrix.map(row => (
+          <div key={row.id} style={{ display:"grid", gridTemplateColumns:"120px 1fr 90px", gap:"6px", marginBottom:"3px" }}>
+            <p style={{ fontSize:"9px", fontWeight:700 }}>{row.category}</p>
+            <p style={{ fontSize:"9px", color:"#444" }}>{(row.items||[]).join(", ")}</p>
+            <p style={{ fontSize:"8.5px", fontStyle:"italic", color:"#666" }}>{row.proficiency}</p>
+          </div>
+        ))}
+      </> : (content.skills||[]).length > 0 && <>
+        <SecTitle title="Skills" />
+        {content.skills.map(cat => (
+          <p key={cat.id} style={{ fontSize:"9px", color:"#333", marginBottom:"2px" }}><strong>{cat.category}</strong>{cat.category&&": "}{(cat.items||[]).join(", ")}</p>
+        ))}
+      </>}
+      {(content.experience||[]).length > 0 && <>
+        <SecTitle title="Experience" />
+        {content.experience.map(exp => (
+          <div key={exp.id} style={{ marginBottom:"10px" }}>
+            <div style={{ display:"flex", justifyContent:"space-between" }}>
+              <p style={{ fontWeight:700, fontSize:"10px" }}>{exp.position}</p>
+              <p style={{ fontSize:"8.5px", color:"#666" }}>{exp.startDate}{exp.endDate&&` – ${exp.endDate}`}</p>
+            </div>
+            <p style={{ fontSize:"9.5px", fontStyle:"italic", color:"#444", marginBottom:"3px" }}>{exp.company}</p>
+            {(exp.bullets||[]).map((b,i) => <Bullet key={i} text={b} />)}
+          </div>
+        ))}
+      </>}
+      {(content.ctfToolingProjects||[]).length > 0 && <>
+        <SecTitle title="CTF & Security Tooling" />
+        {content.ctfToolingProjects.map(c => (
+          <div key={c.id} style={{ marginBottom:"6px" }}>
+            <div style={{ display:"flex", justifyContent:"space-between" }}>
+              <p style={{ fontWeight:700, fontSize:"9.5px" }}>{c.name}</p>
+              <p style={{ fontSize:"8.5px", color:"#666" }}>{[c.platform,c.rank].filter(Boolean).join(" — ")}</p>
+            </div>
+            {c.tools?.length ? <p style={{ fontSize:"8.5px", color:"#666" }}>Tools: {c.tools.join(", ")}</p> : null}
+          </div>
+        ))}
+      </>}
+      {(content.projects||[]).length > 0 && <>
+        <SecTitle title="Projects" />
+        {content.projects.map(proj => (
+          <div key={proj.id} style={{ marginBottom:"6px" }}>
+            <p style={{ fontWeight:700, fontSize:"9.5px" }}>{proj.name}</p>
+            <p style={{ fontSize:"9px", color:"#444" }}>{proj.description}</p>
+          </div>
+        ))}
+      </>}
+      {(content.education||[]).length > 0 && <>
+        <SecTitle title="Education" />
+        {content.education.map(edu => (
+          <div key={edu.id} style={{ marginBottom:"4px" }}>
+            <p style={{ fontWeight:700, fontSize:"9.5px" }}>{edu.institution}</p>
+            <p style={{ fontSize:"9px", color:"#444" }}>{edu.degree}</p>
+          </div>
+        ))}
+      </>}
+    </div>
+  );
+
+  // ── DevOps / SRE ──────────────────────────────────────────────────────────
+  // Tools & stack section heavy, metrics-driven bullets, infra project focus.
+  if (templateId === "devops-sre") return (
+    <div style={{ fontFamily:"Georgia,'Times New Roman',serif", color:"#18181b", fontSize:"10px",
+      lineHeight:1.5, padding:"36px", minHeight:"1123px", position:"relative" }}>
+      {!isPro && <WM />}
+      <div style={{ textAlign:"center", marginBottom:"10px" }}>
+        <h1 style={{ fontSize:"22px", fontWeight:700, color:accent, margin:"0 0 2px" }}>{p.firstName||"Your"} {p.lastName||"Name"}</h1>
+        {p.title && <p style={{ fontSize:"11px", color:"#3f3f46", margin:"0 0 4px" }}>{p.title}</p>}
+        <ContactRow />
+      </div>
+      <div style={{ height:"1.5px", background:accent, marginBottom:"6px" }} />
+      {(content.metrics||[]).length > 0 && <>
+        <div style={{ display:"flex", justifyContent:"center", flexWrap:"wrap", gap:"14px", padding:"6px 0" }}>
+          {content.metrics.filter(m=>m.value).map(m => (
+            <p key={m.id} style={{ fontSize:"9px", color:"#333" }}>
+              <strong>{m.value}</strong> {m.label}{m.context && <em style={{ color:"#777" }}> ({m.context})</em>}
+            </p>
+          ))}
+        </div>
+        <div style={{ height:"1px", background:"#ddd", marginBottom:"8px" }} />
+      </>}
+      {content.summary && <>
+        <SecTitle title="Summary" />
+        <p style={{ fontSize:"9.5px", color:"#333" }}>{content.summary}</p>
+      </>}
+      {(content.infraStack||[]).length > 0 ? <>
+        <SecTitle title="Infra & Tools Stack" />
+        {content.infraStack.map(row => (
+          <p key={row.id} style={{ fontSize:"9px", color:"#333", marginBottom:"2px" }}>
+            <strong>{row.category}</strong>: {(row.tools||[]).join(", ")}
+          </p>
+        ))}
+      </> : (content.skills||[]).length > 0 && <>
+        <SecTitle title="Skills" />
+        {content.skills.map(cat => (
+          <p key={cat.id} style={{ fontSize:"9px", color:"#333", marginBottom:"2px" }}><strong>{cat.category}</strong>{cat.category&&": "}{(cat.items||[]).join(", ")}</p>
+        ))}
+      </>}
+      {(content.experience||[]).length > 0 && <>
+        <SecTitle title="Experience" />
+        {content.experience.map(exp => (
+          <div key={exp.id} style={{ marginBottom:"10px" }}>
+            <div style={{ display:"flex", justifyContent:"space-between" }}>
+              <p style={{ fontWeight:700, fontSize:"10px" }}>{exp.position}</p>
+              <p style={{ fontSize:"8.5px", color:"#666" }}>{exp.startDate}{exp.endDate&&` – ${exp.endDate}`}</p>
+            </div>
+            <p style={{ fontSize:"9.5px", fontStyle:"italic", color:"#444", marginBottom:"3px" }}>{exp.company}</p>
+            {(exp.bullets||[]).map((b,i) => <Bullet key={i} text={b} />)}
+          </div>
+        ))}
+      </>}
+      {(content.projects||[]).length > 0 && <>
+        <SecTitle title="Infra Projects" />
+        {content.projects.map(proj => (
+          <div key={proj.id} style={{ marginBottom:"6px" }}>
+            <p style={{ fontWeight:700, fontSize:"9.5px" }}>{proj.name}</p>
+            <p style={{ fontSize:"9px", color:"#444" }}>{proj.description}</p>
+          </div>
+        ))}
+      </>}
+      {(content.education||[]).length > 0 && <>
+        <SecTitle title="Education" />
+        {content.education.map(edu => (
+          <p key={edu.id} style={{ fontSize:"9px", color:"#444", marginBottom:"4px" }}><strong>{edu.institution}</strong> — {edu.degree}</p>
+        ))}
+      </>}
+      {(content.certifications||[]).length > 0 && <>
+        <SecTitle title="Certifications" />
+        {content.certifications.map(c => (
+          <p key={c.id} style={{ fontSize:"9px", color:"#333", marginBottom:"2px" }}>{c.name}{c.issuer&&` — ${c.issuer}`}</p>
+        ))}
+      </>}
+    </div>
+  );
+
+  // ── Systems / Low-Level ───────────────────────────────────────────────────
+  // Languages & hardware upfront, research/patent blocks, performance benchmarks.
+  if (templateId === "systems-lowlevel") return (
+    <div style={{ fontFamily:"Georgia,'Times New Roman',serif", color:"#18181b", fontSize:"10px",
+      lineHeight:1.5, padding:"36px", minHeight:"1123px", position:"relative" }}>
+      {!isPro && <WM />}
+      <div style={{ textAlign:"center", marginBottom:"10px" }}>
+        <h1 style={{ fontSize:"22px", fontWeight:700, margin:"0 0 2px" }}>{p.firstName||"Your"} {p.lastName||"Name"}</h1>
+        {p.title && <p style={{ fontSize:"11px", color:"#3f3f46", margin:"0 0 4px" }}>{p.title}</p>}
+        <ContactRow />
+      </div>
+      <div style={{ height:"1.5px", background:accent, marginBottom:"6px" }} />
+      {(content.benchmarks||[]).length > 0 && <>
+        <div style={{ display:"flex", justifyContent:"center", flexWrap:"wrap", gap:"14px", padding:"6px 0" }}>
+          {content.benchmarks.filter(b=>b.value).map(b => (
+            <p key={b.id} style={{ fontSize:"9px", color:"#333" }}>
+              <strong>{b.value}</strong> {b.metric}{b.comparison && <em style={{ color:"#777" }}> ({b.comparison})</em>}
+            </p>
+          ))}
+        </div>
+        <div style={{ height:"1px", background:"#ddd", marginBottom:"8px" }} />
+      </>}
+      {(content.hardwareLanguages||[]).length > 0 ? <>
+        <SecTitle title="Languages & Hardware" />
+        {content.hardwareLanguages.map(row => (
+          <p key={row.id} style={{ fontSize:"9px", color:"#333", marginBottom:"2px" }}>
+            <strong>{row.language}</strong>{row.hardware?.length ? `: ${row.hardware.join(", ")}` : ""}
+          </p>
+        ))}
+      </> : (content.skills||[]).length > 0 && <>
+        <SecTitle title="Skills" />
+        {content.skills.map(cat => (
+          <p key={cat.id} style={{ fontSize:"9px", color:"#333", marginBottom:"2px" }}><strong>{cat.category}</strong>{cat.category&&": "}{(cat.items||[]).join(", ")}</p>
+        ))}
+      </>}
+      {content.summary && <>
+        <SecTitle title="Summary" />
+        <p style={{ fontSize:"9.5px", color:"#333" }}>{content.summary}</p>
+      </>}
+      {(content.experience||[]).length > 0 && <>
+        <SecTitle title="Experience" />
+        {content.experience.map(exp => (
+          <div key={exp.id} style={{ marginBottom:"10px" }}>
+            <div style={{ display:"flex", justifyContent:"space-between" }}>
+              <p style={{ fontWeight:700, fontSize:"10px" }}>{exp.position}</p>
+              <p style={{ fontSize:"8.5px", color:"#666" }}>{exp.startDate}{exp.endDate&&` – ${exp.endDate}`}</p>
+            </div>
+            <p style={{ fontSize:"9.5px", fontStyle:"italic", color:"#444", marginBottom:"3px" }}>{exp.company}</p>
+            {(exp.bullets||[]).map((b,i) => <Bullet key={i} text={b} />)}
+          </div>
+        ))}
+      </>}
+      {(content.projects||[]).length > 0 && <>
+        <SecTitle title="Projects" />
+        {content.projects.map(proj => (
+          <div key={proj.id} style={{ marginBottom:"6px" }}>
+            <p style={{ fontWeight:700, fontSize:"9.5px" }}>{proj.name}</p>
+            <p style={{ fontSize:"9px", color:"#444" }}>{proj.description}</p>
+          </div>
+        ))}
+      </>}
+      {(content.patents||[]).length > 0 && <>
+        <SecTitle title="Patents" />
+        {content.patents.map(pt => (
+          <p key={pt.id} style={{ fontSize:"9px", color:"#333", marginBottom:"2px" }}>
+            {pt.title}{pt.number&&` (${pt.number})`}{pt.status&&` — ${pt.status}`}{pt.date&&`, ${pt.date}`}
+          </p>
+        ))}
+      </>}
+      {(content.education||[]).length > 0 && <>
+        <SecTitle title="Education" />
+        {content.education.map(edu => (
+          <p key={edu.id} style={{ fontSize:"9px", color:"#444", marginBottom:"4px" }}><strong>{edu.institution}</strong> — {edu.degree}</p>
+        ))}
+      </>}
+    </div>
+  );
+
+  // ── CV-Hybrid (Computer Vision / research) ───────────────────────────────
+  // Publications block, research experience, academic lineage visible.
+  if (templateId === "cv-hybrid") return (
+    <div style={{ fontFamily:"Georgia,'Times New Roman',serif", color:"#18181b", fontSize:"10px",
+      lineHeight:1.5, padding:"36px", minHeight:"1123px", position:"relative" }}>
+      {!isPro && <WM />}
+      <div style={{ textAlign:"center", marginBottom:"10px" }}>
+        <h1 style={{ fontSize:"22px", fontWeight:700, margin:"0 0 2px" }}>{p.firstName||"Your"} {p.lastName||"Name"}</h1>
+        {p.title && <p style={{ fontSize:"11px", color:"#3f3f46", margin:"0 0 4px" }}>{p.title}</p>}
+        <ContactRow />
+      </div>
+      <div style={{ height:"1.5px", background:accent, marginBottom:"6px" }} />
+      {content.summary && <>
+        <SecTitle title="Summary" />
+        <p style={{ fontSize:"9.5px", color:"#333" }}>{content.summary}</p>
+      </>}
+      {(content.publications||[]).length > 0 && <>
+        <SecTitle title="Publications" />
+        {content.publications.map(pub => (
+          <p key={pub.id} style={{ fontSize:"9px", color:"#333", marginBottom:"5px", paddingLeft:"12px", textIndent:"-12px" }}>
+            {pub.authors?.length ? `${pub.authors.join(", ")}. ` : ""}
+            <em>{pub.title}</em>.{[pub.venue, pub.year].filter(Boolean).length ? ` ${[pub.venue, pub.year].filter(Boolean).join(", ")}.` : ""}
+            {pub.citationCount ? <span style={{ color:"#777" }}> ({pub.citationCount} citations)</span> : null}
+          </p>
+        ))}
+      </>}
+      {(content.researchExperience||[]).length > 0 && <>
+        <SecTitle title="Research Experience" />
+        {content.researchExperience.map(r => (
+          <div key={r.id} style={{ marginBottom:"10px" }}>
+            <div style={{ display:"flex", justifyContent:"space-between" }}>
+              <p style={{ fontWeight:700, fontSize:"10px" }}>{r.lab}{r.institution&&`, ${r.institution}`}</p>
+              <p style={{ fontSize:"8.5px", color:"#666" }}>{r.startDate}{(r.endDate||r.current)&&` – ${r.current?"Present":r.endDate}`}</p>
+            </div>
+            {(r.advisor || r.fundingSource) && (
+              <p style={{ fontSize:"8.5px", fontStyle:"italic", color:"#666", marginBottom:"3px" }}>
+                {[r.advisor && `Advisor: ${r.advisor}`, r.fundingSource && `Funding: ${r.fundingSource}`].filter(Boolean).join("   ")}
+              </p>
+            )}
+            {(r.bullets||[]).map((b,i) => <Bullet key={i} text={b} />)}
+          </div>
+        ))}
+      </>}
+      {(content.experience||[]).length > 0 && <>
+        <SecTitle title="Industry Experience" />
+        {content.experience.map(exp => (
+          <div key={exp.id} style={{ marginBottom:"10px" }}>
+            <div style={{ display:"flex", justifyContent:"space-between" }}>
+              <p style={{ fontWeight:700, fontSize:"10px" }}>{exp.position}</p>
+              <p style={{ fontSize:"8.5px", color:"#666" }}>{exp.startDate}{exp.endDate&&` – ${exp.endDate}`}</p>
+            </div>
+            <p style={{ fontSize:"9.5px", fontStyle:"italic", color:"#444", marginBottom:"3px" }}>{exp.company}</p>
+            {(exp.bullets||[]).map((b,i) => <Bullet key={i} text={b} />)}
+          </div>
+        ))}
+      </>}
+      {(content.projects||[]).length > 0 && <>
+        <SecTitle title="Projects" />
+        {content.projects.map(proj => (
+          <div key={proj.id} style={{ marginBottom:"6px" }}>
+            <p style={{ fontWeight:700, fontSize:"9.5px" }}>{proj.name}</p>
+            <p style={{ fontSize:"9px", color:"#444" }}>{proj.description}</p>
+          </div>
+        ))}
+      </>}
+      {(content.education||[]).length > 0 && <>
+        <SecTitle title="Education" />
+        {content.education.map(edu => (
+          <p key={edu.id} style={{ fontSize:"9px", color:"#444", marginBottom:"4px" }}><strong>{edu.institution}</strong> — {edu.degree}</p>
+        ))}
+      </>}
+      {(content.skills||[]).length > 0 && <>
+        <SecTitle title="Skills" />
+        {content.skills.map(cat => (
+          <p key={cat.id} style={{ fontSize:"9px", color:"#333", marginBottom:"2px" }}><strong>{cat.category}</strong>{cat.category&&": "}{(cat.items||[]).join(", ")}</p>
+        ))}
+      </>}
+    </div>
+  );
 
   // ── Modern ──────────────────────────────────────────────────────────────────
   if (templateId === "modern") return (

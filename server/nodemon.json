@@ -1,0 +1,6 @@
+{
+  "exec": "node --import ./instrument.mjs index.js",
+  "watch": ["."],
+  "ignore": ["node_modules/*", "logs/*", "*.test.js"],
+  "ext": "js,json,mjs"
+}
